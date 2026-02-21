@@ -2,6 +2,9 @@
 @section('title', 'Mon Profil')
 @section('content')
 
+{{-- Cropper.js --}}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+
 <div class="page-header">
   <div>
     <h1 class="page-title">Mon Profil</h1>
@@ -14,9 +17,42 @@
   {{-- Carte profil gauche --}}
   <div>
     <div class="card" style="text-align:center; padding:28px;">
-      <div style="width:80px; height:80px; background:#2563EB; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:32px; margin:0 auto 16px;">
-        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+
+      {{-- Avatar --}}
+      <div style="position:relative; width:80px; margin:0 auto 16px;">
+        @if(auth()->user()->avatar)
+          <img src="{{ Storage::url(auth()->user()->avatar) }}"
+               alt="Avatar"
+               style="width:80px; height:80px; border-radius:50%; object-fit:cover; border:3px solid #E5E7EB;">
+        @else
+          <div style="width:80px; height:80px; background:#2563EB; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700; font-size:32px;">
+            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+          </div>
+        @endif
+
+        {{-- Bouton crayon --}}
+        <label for="avatarInput"
+               style="position:absolute; bottom:0; right:0; width:26px; height:26px; background:#2563EB; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px solid #fff;"
+               title="Changer la photo">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 3.487a2.25 2.25 0 113.182 3.182L7.5 19.213l-4.5 1.125 1.125-4.5L16.862 3.487z"/>
+          </svg>
+        </label>
       </div>
+
+      {{-- Input file caché --}}
+      <input type="file" id="avatarInput" accept="image/*" style="display:none;">
+
+      {{-- Formulaire upload (envoi après recadrage) --}}
+      <form id="avatarForm" method="POST" action="{{ route('profile.avatar') }}" enctype="multipart/form-data">
+        @csrf
+        <input type="hidden" name="avatar_cropped" id="avatarCropped">
+      </form>
+
+      @if(session('status') === 'avatar-updated')
+        <div style="font-size:12px; color:#10B981; margin-bottom:8px;">✅ Photo mise à jour !</div>
+      @endif
+
       <div style="font-size:18px; font-weight:700; color:#111827;">{{ auth()->user()->name }}</div>
       <div style="font-size:13px; color:#6B7280; margin-top:4px;">{{ auth()->user()->email }}</div>
 
@@ -157,6 +193,23 @@
 
 </div>
 
+{{-- MODAL Recadrage avatar --}}
+<div class="modal-overlay" id="cropModal">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <span class="modal-title">✂️ Recadrer la photo</span>
+      <button class="modal-close" onclick="closeCropModal()">✕</button>
+    </div>
+    <div style="max-height:400px; overflow:hidden; border-radius:8px; background:#000;">
+      <img id="cropImage" src="" alt="Recadrage" style="max-width:100%; display:block;">
+    </div>
+    <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:18px;">
+      <button type="button" class="btn btn-secondary" onclick="closeCropModal()">Annuler</button>
+      <button type="button" class="btn btn-primary" onclick="confirmCrop()">✅ Confirmer</button>
+    </div>
+  </div>
+</div>
+
 {{-- MODAL Suppression compte --}}
 <div class="modal-overlay" id="deleteModal">
   <div class="modal" style="max-width:400px;">
@@ -178,5 +231,56 @@
     </form>
   </div>
 </div>
+
+@push('scripts')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+<script>
+  let cropper = null;
+
+  document.getElementById('avatarInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const cropImage = document.getElementById('cropImage');
+      cropImage.src = ev.target.result;
+
+      document.getElementById('cropModal').classList.add('open');
+
+      if (cropper) { cropper.destroy(); cropper = null; }
+
+      cropper = new Cropper(cropImage, {
+        aspectRatio: 1,
+        viewMode: 1,
+        dragMode: 'move',
+        autoCropArea: 0.8,
+        restore: false,
+        guides: true,
+        center: true,
+        highlight: false,
+        cropBoxMovable: true,
+        cropBoxResizable: true,
+        toggleDragModeOnDblclick: false,
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function closeCropModal() {
+    document.getElementById('cropModal').classList.remove('open');
+    if (cropper) { cropper.destroy(); cropper = null; }
+    document.getElementById('avatarInput').value = '';
+  }
+
+  function confirmCrop() {
+    if (!cropper) return;
+    const canvas = cropper.getCroppedCanvas({ width: 300, height: 300 });
+    const base64 = canvas.toDataURL('image/jpeg', 0.9);
+    document.getElementById('avatarCropped').value = base64;
+    document.getElementById('avatarForm').submit();
+  }
+</script>
+@endpush
 
 @endsection

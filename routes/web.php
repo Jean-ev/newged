@@ -39,9 +39,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/trash/{document}/force',           [DocumentController::class, 'forceDelete'])->name('documents.force-delete');
 
     // Paramètres
-    Route::get('/settings', function () {
-        return view('settings');
-    })->name('settings');
+    Route::get('/settings',                            [ProfileController::class, 'settings'])->name('settings');
+    Route::post('/settings',                           [ProfileController::class, 'updatePreferences'])->name('settings.update');
+
     // Dossiers
     Route::post('/folders',                            [FolderController::class, 'store'])->name('folders.store');
     Route::get('/folders/{folder}',                    [FolderController::class, 'show'])->name('folders.show');
@@ -52,6 +52,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/profile',                             [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',                           [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile',                          [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::post('/profile/avatar',                     [ProfileController::class, 'updateAvatar'])->name('profile.avatar');
 });
 
 // ═══════════════════════════════

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+    @php use Illuminate\Support\Facades\Storage; @endphp
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -497,10 +498,15 @@ body {
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
     </button>
 
-    <div class="user-menu">
-      <div class="tb-avatar" onclick="toggleDropdown()">
-        {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
-      </div>
+    <div class="tb-avatar" onclick="toggleDropdown()" style="overflow:hidden; padding:0;">
+        @if(auth()->user()->avatar)
+            <img src="{{ Storage::url(auth()->user()->avatar) }}"
+                alt="avatar"
+                style="width:100%; height:100%; object-fit:cover; border-radius:50%;">
+        @else
+            {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+        @endif
+    </div>
       <div class="dropdown" id="userDropdown">
         <div class="dropdown-header">
           <div class="dropdown-name">{{ auth()->user()->name }}</div>
